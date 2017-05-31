@@ -1,0 +1,176 @@
+######## JSON PAYLOAD ########
+
+   {
+"id": "",
+    "externalId": "MPEAccess01",
+    "category": "new access EPL",
+    "orderActivity": "install",
+    "version": "1",
+    "relatedParty": [
+      {
+        "name": "MP Buyer",
+        "role": "Buyer",
+        "numberExtension": "44",
+        "number": "0601",
+        "emailAddress": "fj834b@att.com"
+      }
+    ],
+
+    "orderItem": [
+
+      {
+        "id": "01",
+        "action": "add",
+        "productOffering": {
+          "id": "PO_AccessEPL",
+          "name": "AccessEPL"
+        },
+        "product": [
+          {
+            "productSpecificationRef": {
+              "id": "OVC"
+            } ,
+            "@type": "AccessEPL",
+            "@schemaLocation": " URL for AccessEPL description ",
+            "buyerOVCIdentifier": "MPOVCA-End",
+            "SVLANIdentifier": "2 -- from MEF if have"
+          }
+        ],
+        "orderItemRelationship": [
+          {
+            "type": "reliesOn",
+            "id": "02"
+          },
+          {
+            "type": "reliesOn",
+            "id": "03"
+          }
+        ],
+        "relatedServiceQualification": [
+          {
+            "id": " SQ01"
+          }
+        ],
+        "@type": " MEFOrderItem ",
+        "@schemaLocation": " URL for MEF Order Item Description "
+      },
+
+         {
+        "id": "02",
+        "action": "add",
+        "productOffering": {
+          "id": "PO_ OVCEndPointENNI ",
+          "name": "OVC ENNI EndPoint"
+        },
+        "product": [
+          {
+            "productSpecificationRef": {
+              "id": "OVCEndPointENNI"
+            } ,
+            "@type": " OVCEndPointENNI ",
+            "@schemaLocation": "URL for OVC ENNI EndPoint",
+            "cir": "Customer determined -- screen value",
+            "productRelationship": [
+              {
+                "type": "reliesOn",
+                "product": {
+                  "id": "ENNI A-end ID -- coming from mapping table"
+                }
+              }
+            ]
+          }
+        ]
+
+     },
+      {
+        "id": "03",
+        "action": "add",
+        "productOffering": {
+          "id": " PO_ OVCEndPointUNI ",
+          "name": " OVC UNI EndPoint "
+        },
+        "product": [
+          {
+            "productSpecificationRef": {
+              "id": "OVCEndPointUNI"
+            } ,
+            "@type": "string",
+            "@schemaLocation": " URL for OVC UNI EndPoint",
+              "cir": "Customer determined -- screen value",
+            "productRelationship": [
+              {
+                "type": "reliesOn",
+                "product": {
+                  "id": "UNI A-end ID -- hardcoded"
+                }
+              }
+            ]
+
+          }
+        ]
+
+      }
+    ]
+  }
+
+######### TRANSLATION INTO A JAVA OBJECT ##########
+
+
+JsonObject payload = Json.createObjectBuilder()
+
+  .add("input", Json.createObjectBuilder()
+
+
+    .add("end-point", Json.createArrayBuilder()
+       .add(Json.createObjectBuilder()
+            .add("service-interface-point", "sip:ovs-node:s5:s5-eth1")
+            .add("direction", "bidirectional")
+            .add("layer-protocol-name", "eth")
+            .add("nrp-cg-eth-frame-flow-cpa-aspec", Json.createObjectBuilder()
+        	        .add("ce-vlan-id-list",Json.createObjectBuilder()
+        		        .add("vlan-id-list", Json.createArrayBuilder()
+        		                .add(Json.createObjectBuilder()
+        				            .add("vlan-id", 200))))))
+
+    .add(Json.createObjectBuilder()
+        .add("service-interface-point": "sip:ovs-node:s1:ens6")
+        .add("direction": "bidirectional")
+        .add("layer-protocol-name", "eth")
+        .add("nrp-cg-eth-frame-flow-cpa-aspec", Json.createObjectBuilder()
+        	.add("ce-vlan-id-list", Json.createObjectBuilder()
+        		.add("vlan-id-list", createArrayBuilder()
+        		         .add(Json.createObjectBuilder()
+            				.add("vlan-id", 200)))))))
+
+
+    .add("conn-constraint",Json.createObjectBuilder()
+
+      .add("service-type", "point-to-point-connectivity")
+
+      .add("service-level": "best-effort"))
+
+    .add("nrp-cg-eth-conn-serv-spec",  Json.createObjectBuilder()
+
+      .add("connection-type": "point-to-point")
+
+      .add("max-frame-size": "2000")
+
+      .add("unicast-frame-delivery": "unconditionally")
+
+      .add("broadcast-frame-delivery": "unconditionally")
+
+      .add("multicast-frame-delivery": "unconditionally")
+
+      .add("ce-vlan-id-preservation": "preserve")
+
+      .add("ce-vlan-pcp-preservation": "true")
+
+      .add("ce-vlan-dei-preservation": "true")
+
+      .add("s-vlan-pcp-preservation": "true")
+
+      .add("s-vlan-dei-preservation", "true")
+
+      .add("available-meg-level", "0")
+
+      .add("l2cp-address-set", "ctb")));
