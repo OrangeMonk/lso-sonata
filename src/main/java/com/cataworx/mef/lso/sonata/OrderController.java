@@ -17,6 +17,7 @@
 package com.cataworx.mef.lso.sonata;
 
 import org.springframework.http.*;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -43,53 +44,11 @@ public class OrderController {
 
     @RequestMapping("/order/eaccess")
     public HttpEntity<OrderResponse> processOrder(
-            @RequestParam(value = "orderID", required = false, defaultValue = "1") String orderID) {
+            @RequestParam(value = "orderID", required = false, defaultValue = "1") String orderID, @RequestBody EAccessService service) {
 
-        // Construct JSON payload based on UNI Manager's Data Model
-        // Used indentation to highlight object structure
-        //TODO: Modify this request to work at the LEGATO interface level
-        //TODO: Increase the level of abastraction of the request. Some of these parameters belong in PRESTO
-        JsonObject payload = Json.createObjectBuilder()
-                .add("input", Json.createObjectBuilder()
-                        .add("end-point", Json.createArrayBuilder()
-                                .add(Json.createObjectBuilder()
-                                        .add("service-interface-point", "sip:ovs-node:s5:s5-eth1")
-                                        .add("direction", "bidirectional")
-                                        .add("layer-protocol-name", "eth")
-                                        .add("nrp-cg-eth-frame-flow-cpa-aspec", Json.createObjectBuilder()
-                                                .add("ce-vlan-id-list",Json.createObjectBuilder()
-                                                        .add("vlan-id-list", Json.createArrayBuilder()
-                                                                .add(Json.createObjectBuilder()
-                                                                        .add("vlan-id", 202))))))
+        JsonObject payload = buildPayload(service.getServiceType(), service.getServiceLevel(), service.getVlanID());
 
-                                .add(Json.createObjectBuilder()
-                                        .add("service-interface-point", "sip:ovs-node:s1:ens6")
-                                        .add("direction", "bidirectional")
-                                        .add("layer-protocol-name", "eth")
-                                        .add("nrp-cg-eth-frame-flow-cpa-aspec", Json.createObjectBuilder()
-                                                .add("ce-vlan-id-list", Json.createObjectBuilder()
-                                                        .add("vlan-id-list", Json.createArrayBuilder()
-                                                                .add(Json.createObjectBuilder()
-                                                                        .add("vlan-id", 202)))))))
-
-        .add("conn-constraint",Json.createObjectBuilder()
-                .add("service-type", "point-to-point-connectivity")
-                .add("service-level", "best-effort"))
-        .add("nrp-cg-eth-conn-serv-spec",  Json.createObjectBuilder()
-                .add("connection-type", "point-to-point")
-        .add("max-frame-size", "2000")
-        .add("unicast-frame-delivery", "unconditionally")
-        .add("broadcast-frame-delivery", "unconditionally")
-        .add("multicast-frame-delivery", "unconditionally")
-        .add("ce-vlan-id-preservation", "preserve")
-        .add("ce-vlan-pcp-preservation", "true")
-        .add("ce-vlan-dei-preservation", "true")
-        .add("s-vlan-pcp-preservation", "true")
-        .add("s-vlan-dei-preservation", "true")
-                .add("available-meg-level", "0")
-                .add("l2cp-address-set", "ctb"))).build();
-
-
+        System.out.println(payload);
 
         RestTemplate restTemplate = new RestTemplate();
 
@@ -106,13 +65,65 @@ public class OrderController {
         if (serviceCreationResponse.getStatusCode() == HttpStatus.OK) {
             OrderResponse orderResponse = new OrderResponse(serviceCreationResponse.toString());
 
-            orderResponse.add(linkTo(methodOn(OrderController.class).processOrder(orderID)).withSelfRel());
+            orderResponse.add(linkTo(methodOn(OrderController.class).processOrder(orderID, service)).withSelfRel());
             return new ResponseEntity<OrderResponse>(orderResponse, HttpStatus.OK);
         }
 
         OrderResponse orderResponse = new OrderResponse(String.format(FAILURE, orderID));
-        orderResponse.add(linkTo(methodOn(OrderController.class).processOrder(orderID)).withSelfRel());
+        orderResponse.add(linkTo(methodOn(OrderController.class).processOrder(orderID, service)).withSelfRel());
             return new ResponseEntity<OrderResponse>(orderResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        private JsonObject buildPayload(String serviceType, String serviceLevel, int vlanID){
+
+            // Construct JSON payload based on UNI Manager's Data Model
+            // Used indentation to highlight object structure
+            //TODO: Modify this request to work at the LEGATO interface level
+            //TODO: Increase the level of abastraction of the request. Some of these parameters belong in PRESTO
+            JsonObject payload = Json.createObjectBuilder()
+                    .add("input", Json.createObjectBuilder()
+                            .add("end-point", Json.createArrayBuilder()
+                                    .add(Json.createObjectBuilder()
+                                            .add("service-interface-point", "sip:ovs-node:s5:s5-eth1")
+                                            .add("direction", "bidirectional")
+                                            .add("layer-protocol-name", "eth")
+                                            .add("nrp-cg-eth-frame-flow-cpa-aspec", Json.createObjectBuilder()
+                                                    .add("ce-vlan-id-list",Json.createObjectBuilder()
+                                                            .add("vlan-id-list", Json.createArrayBuilder()
+                                                                    .add(Json.createObjectBuilder()
+                                                                            .add("vlan-id", vlanID))))))
+
+                                    .add(Json.createObjectBuilder()
+                                            .add("service-interface-point", "sip:ovs-node:s1:ens6")
+                                            .add("direction", "bidirectional")
+                                            .add("layer-protocol-name", "eth")
+                                            .add("nrp-cg-eth-frame-flow-cpa-aspec", Json.createObjectBuilder()
+                                                    .add("ce-vlan-id-list", Json.createObjectBuilder()
+                                                            .add("vlan-id-list", Json.createArrayBuilder()
+                                                                    .add(Json.createObjectBuilder()
+                                                                            .add("vlan-id",vlanID)))))))
+
+                            .add("conn-constraint",Json.createObjectBuilder()
+                                    //.add("service-type", "point-to-point-connectivity")
+                                    //.add("service-level", "best-effort"))
+                                    .add("service-type", serviceType)
+                                    .add("service-level", serviceLevel))
+                            .add("nrp-cg-eth-conn-serv-spec",  Json.createObjectBuilder()
+                                    .add("connection-type", "point-to-point")
+                                    .add("max-frame-size", "2000")
+                                    .add("unicast-frame-delivery", "unconditionally")
+                                    .add("broadcast-frame-delivery", "unconditionally")
+                                    .add("multicast-frame-delivery", "unconditionally")
+                                    .add("ce-vlan-id-preservation", "preserve")
+                                    .add("ce-vlan-pcp-preservation", "true")
+                                    .add("ce-vlan-dei-preservation", "true")
+                                    .add("s-vlan-pcp-preservation", "true")
+                                    .add("s-vlan-dei-preservation", "true")
+                                    .add("available-meg-level", "0")
+                                    .add("l2cp-address-set", "ctb"))).build();
+
+            return payload;
+
         }
     }
 
